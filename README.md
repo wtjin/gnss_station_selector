@@ -1,2 +1,2 @@
 # gnss_station_selector
-Use k-means and TOPSIS to select GNSS stations for uniform distribution
+Use spherical k-means and Hybrid weight-TOPSIS to select GNSS stations for uniform distribution
