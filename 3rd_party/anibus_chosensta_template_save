@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<!DOCTYPE config>
+
+<config>
+ <gen>
+   <sys> GPS GLO GAL BDS </sys>
+   <int> 30 </int>
+ </gen>
+ 
+ <nav chk_record="true" chk_health="true" chk_duplic="true"/>
+ 
+ <sys id='GPS'>
+   	<band> 1 2 </band>
+   	<attr> C W </attr>
+ </sys>
+ 
+ <sys id='GLO'>
+   	<band> 1 2 </band>
+   	<attr> C P </attr>
+ </sys>
+ 
+ <sys id='GAL'>
+   	<band> 1 5 </band>
+   	<attr> C Q X </attr>
+ </sys>
+ 
+ <sys id='BDS'>
+   	<band> 2 6 </band>
+   	<attr> I </attr>
+ </sys>
+
+ <inp>
+   <rinexo> /data1/jinweitong/data/gnss/obs/daily/2025/001/cxdz0010.25o </rinexo>
+   <rinexn> /data1/jinweitong/data/gnss/nav/daily/brdm0010.25p </rinexn>
+ </inp>
+
+ <!--qc
+   sec_sum="9"
+   sec_hdr="9"
+   sec_obs="9"
+   sec_gap="9"
+   sec_bnd="9"
+   sec_pre="9"
+   sec_ele="9"
+   sec_mpx="9"
+   sec_snr="9"
+   int_stp="900"
+   int_gap="600"
+   int_pcs="1800"
+   mpx_nep="20"
+   mpx_lim="3.0"
+   col_sat="32"
+   ele_cut="7"
+   pos_kin="false"
+ /-->
+ <qc
+   sec_sum="9"
+   sec_pre="1"
+   sec_mpx="1"
+   sec_snr="1"
+   int_stp="900"
+   int_gap="600"
+   int_pcs="1800"
+   mpx_nep="20"
+   mpx_lim="3.0"
+   col_sat="32"
+   ele_cut="7"
+   pos_kin="false"
+ />
+
+ <out verb="1" append="false" >
+   <xtr> ./out/$(rec)%Y%j.xtr </xtr>
+ </out>
+
+</config>
