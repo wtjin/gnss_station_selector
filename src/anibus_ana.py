@@ -9,7 +9,7 @@ def gene_rinex_code(site_name: str,
                     data_root_path: str,
                 ) -> tuple[str, str]:
     '''
-    生成rinex文件名,包括obs和广播星历
+    Generate RINEX file names, including observation data and broadcast ephemeris
     '''
     cyear = str(year).zfill(4)
     cdoy = str(doy).zfill(3)
@@ -27,44 +27,39 @@ def replace_rinex(xml_path: str,
                   new_rinexn: str,
                   *, backup: bool = True) -> None:
     """
-    把 xml_path 里的 <rinexo> 与 <rinexn> 文本内容替换为指定值。
-    默认先备份原文件为 *.bak；若想写到新文件，请自行修改 out_path。
+    Replace the text content of <rinexo> and <rinexn> in xml_path with the specified values.
+    By default, the original file is backed up as *.bak first; 
+    if someone wants to write to a new file, please modify the out_path.
     """
     xml_path = Path(xml_path)
     
-    # 检查文件是否存在
     if not xml_path.exists():
-        # 如果存在备份文件，则从备份文件恢复
         backup_path = xml_path.with_suffix(xml_path.suffix + '.bak')
         if backup_path.exists():
             import shutil
             shutil.copy(backup_path, xml_path)
         else:
-            raise FileNotFoundError(f"找不到XML文件: {xml_path} 且无备份文件可用")
+            raise FileNotFoundError(f"cannot find XML file: {xml_path} And there are no backup files available.")
     
-    # 检查文件是否为空
     if xml_path.stat().st_size == 0:
-        raise ValueError(f"XML文件为空: {xml_path}")
+        raise ValueError(f"XML file is empty: {xml_path}")
 
-    # 1. 读文件
     tree = ET.parse(xml_path)
     root = tree.getroot()
 
-    # 2. 定位并替换
     inp = root.find('inp')
     if inp is None:
-        raise ValueError("找不到 <inp> 节点")
+        raise ValueError("Cannot find the <inp> node")
 
     rinexo_node = inp.find('rinexo')
     rinexn_node = inp.find('rinexn')
 
     if rinexo_node is None or rinexn_node is None:
-        raise ValueError("找不到 <rinexo> 或 <rinexn> 节点")
+        raise ValueError("Cannot find <rinexo> or <rinexn> nodes")
 
     rinexo_node.text = new_rinexo
     rinexn_node.text = new_rinexn
 
-    # 3. 备份、写回
     if backup:
         xml_path.replace(xml_path.with_suffix(xml_path.suffix + '.bak'))
 
@@ -79,19 +74,16 @@ def exec_anibus_single_site(xml_file: str,
                             work_root_path: str,
                             ) -> None:
     """
-    执行单站单日 anibus分析
+    Perform a single-station, single-day analysis using anubis
     """
     rinex_o_content, rinex_n_content = gene_rinex_code(site_name,year,doy,data_root_path)
     replace_rinex(xml_file, str(rinex_o_content), str(rinex_n_content))
 
-    # 执行外部命令
-    # 切换到work_root_path目录下
+    
     anubis_work_path = Path(work_root_path,'work'+str(year).zfill(4)+str(doy).zfill(3),'anubis')
-    if not anubis_work_path.exists():  # 如果目录不存在，则创建
+    if not anubis_work_path.exists():
         os.makedirs(anubis_work_path)
     os.chdir(anubis_work_path)
-    # subprocess.run([anubis_bin_pathandname, '-x', xml_file], check=True)
-    # 把subprocess替换成os.system
     os.system(f'{anubis_bin_pathandname} -x {xml_file}')
 
 def exec_anibus_multi_sites(xml_file: str,
@@ -103,7 +95,7 @@ def exec_anibus_multi_sites(xml_file: str,
                             work_root_path: str,
                             ) -> None:
     """
-    执行多站单日 anibus分析
+    Perform a multiple-stations, single-day analysis using anubis
     """
     for site_name in site_list:
         exec_anibus_single_site(xml_file, anubis_bin_pathandname, site_name, year, doy, data_root_path, work_root_path)
@@ -119,7 +111,7 @@ def exec_anibus_multi_days(xml_file: str,
                            ) -> None:
 
     """
-    执行多站多日 anibus分析
+    Perform a multiple-stations, mutiple-days analysis using anubis
     """
     from site_list import read_list
     sitelist = read_list(site_list_file)
@@ -129,18 +121,17 @@ def exec_anibus_multi_days(xml_file: str,
 
 
 if __name__ == '__main__':
-    # ===== 设置命令行参数 =====
     import argparse
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--xml_file', help='xml文件路径')
-    parser.add_argument('--anubis_bin', help='anubis二进制文件路径')
-    parser.add_argument('--site_list_file', help='站点列表文件路径')
-    parser.add_argument('--year', type=int, help='年份')
-    parser.add_argument('--doy_start', type=int, help='开始年积日')
-    parser.add_argument('--doy_end', type=int, help='结束年积日')
-    parser.add_argument('--data_root_path', help='数据根目录路径')
-    parser.add_argument('--work_root_path', help='工作根目录路径') 
+    parser.add_argument('--xml_file', help='XML file path')
+    parser.add_argument('--anubis_bin', help='Path of the anubis executable program')
+    parser.add_argument('--site_list_file', help='Path of the site list file')
+    parser.add_argument('--year', type=int, help='year')
+    parser.add_argument('--doy_start', type=int, help='start of DOY')
+    parser.add_argument('--doy_end', type=int, help='end of DOY')
+    parser.add_argument('--data_root_path', help='Data root directory path')
+    parser.add_argument('--work_root_path', help='Working root directory path')
     # ===========================
 
     args = parser.parse_args()

@@ -174,7 +174,7 @@ def gnss_topsis_evaluation(stations: pd.DataFrame, w_sys: dict=None, show_detail
         level_counts = result_df['quality_level'].value_counts()
         for level, count in level_counts.items():
             percentage = count / len(result_df) * 100
-            print(f"{level}: {count}个 ({percentage:.1f}%)")
+            print(f"{level}: {count} ({percentage:.1f}%)")
         
         
         # details of the top 10

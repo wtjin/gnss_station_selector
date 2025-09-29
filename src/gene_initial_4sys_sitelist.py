@@ -1,5 +1,6 @@
-# 从IGS给出的测站列表中(https://files.igs.org/pub/station/general/IGSNetwork.csv)
-# 筛选出具有支持四系统且在分析时段内所有的sinex周解文件中都存在精密坐标的测站
+# from the file provided by IGS(https://files.igs.org/pub/station/general/IGSNetwork.csv)
+# Filter out the stations that support four systems and 
+# have precise coordinates in all sinex weekly solution files during the analysis period.
 
 import os
 import platform
@@ -24,8 +25,7 @@ def get_4sys_site_from_igs_metadata(igs_filename:str,
                                     year:int, 
                                     doy_start:int) -> list[str]:
     """
-    筛选支持四系统,且在分析时段内ReceiverDateInstalled要早于year,doy_start这样才能
-    保证有数据
+    support four systems
     """
     with open(igs_filename, 'r') as inp:
         alldata = inp.readlines()
@@ -56,14 +56,8 @@ def get_4sys_site_from_igs_metadata(igs_filename:str,
 
 def generate_sinex_week_file_list(sinex_root_path:str, year:int, doy_start:int, doy_end:int) -> list[Path]:
     """
-    生成可sinex文件路径
-    参数：
-    - sinex_root_path: sinex文件根目录
-    - year: 年份
-    - doy_start: 开始年积日
-    - doy_end: 结束年积日
-    返回：
-    - sinex_file_list: sinex文件路径:sinex_root_path/sinex_file_name
+    return：
+    - sinex_file_list: sinex file path:sinex_root_path/sinex_file_name
     """
     sinex_file_list = []
 
@@ -80,22 +74,20 @@ def generate_sinex_week_file_list(sinex_root_path:str, year:int, doy_start:int, 
             sinex_file_name = f"igs{str(used_year)[-2:]}P{gpsweek:04d}.snx"
         sinex_file_list.append(Path(sinex_root_path,sinex_file_name))
 
-    # 去除重复元素但保持顺序不变
     unique_sinex_file_list = list(dict.fromkeys(sinex_file_list))
 
     return unique_sinex_file_list
 def delete_site_not_in_sinex(init_site_list:list[str], sinex_file_list:list[Path]) -> list[str]:
     """
-    如果所有的sinex周解文件中都存在该测站的精密坐标,则返回4系统测站名称
+    If the precise coordinates of the station exist in all sinex 
+    weekly solution files, return the 4-system station name.
     """
     site_list = init_site_list.copy()
     i_len = len(sinex_file_list)
     
-    # 遍历所有站点
     sites_to_remove = []
     for site in site_list:
         site_found_in_all_files = True
-        # 检查当前站点是否在所有SINEX文件中都存在
         for i, sinex_file in enumerate(sinex_file_list):
             # print(f"Finding {site} in {i+1}/{i_len} sinex_file: {sinex_file}\n")
             try:
@@ -106,40 +98,36 @@ def delete_site_not_in_sinex(init_site_list:list[str], sinex_file_list:list[Path
                 site_found_in_all_files = False
                 break
             
-            # 查找 SOLUTION/ESTIMATE 块的开始和结束位置
+            # SOLUTION/ESTIMATE start and end indices
             s_index, e_index = None, None
             for index, line in enumerate(all_data):
                 if line.startswith('+SOLUTION/ESTIMATE'):
-                    s_index = index + 2  # 从下一行开始
+                    s_index = index + 2  
                 if line.startswith('-SOLUTION/ESTIMATE'):
                     e_index = index
                     break
             
-            # 检查站点是否在 SOLUTION/ESTIMATE 块中
             site_found = False
             if s_index is not None and e_index is not None:
-                # 在 SOLUTION/ESTIMATE 块中查找 STAX + 站点名的行
                 for line in all_data[s_index:e_index]:
-                    # 检查是否为STAX行且站点名匹配（通常格式为STAX XXXX）
                     if 'STAX' and site.upper() in line:
                         site_found = True
                         break
             
             if site_found:
-                # 站点在当前文件中找到，继续检查下一个文件
-                # print(f"{site} found in {sinex_file}\n")
                 continue
             else:
-                # 站点在当前文件中未找到，标记为不在所有文件中
+                # The site was not found in the current file 
+                # and is marked as not present in all files.
                 print(f"{site} is not in {sinex_file}, will be removed\n")
                 site_found_in_all_files = False
                 break
         
-        # 如果站点不在所有文件中，则标记为删除
+        # If the site is not present in all files, mark it as deleted.
         if not site_found_in_all_files:
             sites_to_remove.append(site)
     
-    # 删除标记的站点
+    # Delete the marked site
     for site in sites_to_remove:
         site_list.remove(site)
     
@@ -147,7 +135,8 @@ def delete_site_not_in_sinex(init_site_list:list[str], sinex_file_list:list[Path
 
 def write_clock_type(site_list: list[str], out_file_path:str):
     """
-    把选出来的测站的是氢原子钟的类型写到文件中
+    Write the type of hydrogen atomic clock of the 
+    selected observation stations into the file.
     """
     h_clk_flag = ['H-MASER','H_MASER','H2 MASER','HYDROGEN','UTC(','VCH-1008','EXTERNAL IMASER 3000','EXTERNAL MASER']
     with open('IGSNetwork.csv','r') as inp:
@@ -157,7 +146,6 @@ def write_clock_type(site_list: list[str], out_file_path:str):
         for site in site_list:
             for line in lines:
                 if site.upper() == line.split(',')[0][0:4].upper():
-                    # 判断原子钟类型
                     clock_type = line.split(',')[21].upper()
                     if any(flag in clock_type for flag in h_clk_flag):
                         outp.write(site.upper()+'  '+clock_type+'\n')
@@ -174,17 +162,15 @@ def this_file_main(bindir:str, sinex_root_path:str, year:int, doy_start:int, doy
     write_clock_type(site_list,out_file_path+'_CLKTYPE')
 
 if __name__ == '__main__':
-    # 命令行参数版本
-    # ===== 设置命令行参数 =====
     import argparse
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--bindir', help='wget的路径')
-    parser.add_argument('--sinex_root_path', help='sinex周解文件根目录')
-    parser.add_argument('--year', type=int, help='年份')
-    parser.add_argument('--doy_start', type=int, help='开始年积日')
-    parser.add_argument('--doy_end', type=int, help='结束年积日')
-    parser.add_argument('--out_file_path', help='输出站点列表文件完整路径')
+    parser.add_argument('--bindir', help='The path of wget')
+    parser.add_argument('--sinex_root_path', help='Root directory of sinex weekly solution files')
+    parser.add_argument('--year', type=int, help='year')
+    parser.add_argument('--doy_start', type=int, help='start of DOY')
+    parser.add_argument('--doy_end', type=int, help='end of DOY')
+    parser.add_argument('--out_file_path', help='the full output path of the site list file')
     # ===========================
 
     args = parser.parse_args()
