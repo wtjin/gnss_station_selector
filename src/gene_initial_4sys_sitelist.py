@@ -165,7 +165,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--bindir', help='The path of wget')
+    parser.add_argument('--bindir', help='The path of wget binary file')
     parser.add_argument('--sinex_root_path', help='Root directory of sinex weekly solution files')
     parser.add_argument('--year', type=int, help='year')
     parser.add_argument('--doy_start', type=int, help='start of DOY')
